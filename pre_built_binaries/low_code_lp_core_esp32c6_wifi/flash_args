@@ -1,0 +1,5 @@
+--flash_mode dio --flash_freq 80m --flash_size 4MB
+0x0 bootloader.bin
+0x10000 low_code_lp_core_maincore.bin
+0xc000 partition-table.bin
+0x1f8000 ota_data_initial.bin

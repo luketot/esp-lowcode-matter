@@ -15,6 +15,8 @@
 
 #define LP_CORE_FREQ_IN_KHZ 16000
 
+static const char *TAG = "lp_sw_timer";
+
 typedef struct {
     bool active; /* false means a suspended/uninitialized timer */
     bool valid; /* whether this timer is valid or not */
@@ -37,12 +39,12 @@ static lp_sw_timer_t g_timers[LP_SW_TIMER_MAX_ITEMS];
 lp_sw_timer_handle_t lp_sw_timer_create(lp_sw_timer_config_t *config)
 {
     if (config->handler == NULL) {
-        lp_core_printf("%s: Invalid handler\n", __func__);
+        printf("%s: %s Invalid handler\n", TAG, __func__);
         return NULL;
     }
 
     if (config->periodic == true && config->timeout_ms == 0) {
-        lp_core_printf("%s: Invalid periodic timer with timeout_ms=0\n", __func__);
+        printf("%s: %s Invalid periodic timer with timeout_ms=0\n", TAG, __func__);
         return NULL;
     }
 
@@ -64,7 +66,7 @@ lp_sw_timer_handle_t lp_sw_timer_create(lp_sw_timer_config_t *config)
         timer->periodic = config->periodic;
     }
     else {
-        lp_core_printf("Lack of memory for lp_sw_timer\n");
+        printf("%s: Lack of memory for lp_sw_timer\n", TAG);
     }
 
     return (lp_sw_timer_handle_t)timer;
@@ -96,7 +98,7 @@ int lp_sw_timer_start(lp_sw_timer_handle_t timer_handle)
 {
     lp_sw_timer_t *timer = (lp_sw_timer_t *)timer_handle;
     if (timer == NULL || timer->valid == false){
-        lp_core_printf("%s: Invalid timer\n", __func__);
+        printf("%s: %s Invalid timer\n", TAG, __func__);
         return -1;
     }
 
@@ -127,7 +129,7 @@ int lp_sw_timer_stop(lp_sw_timer_handle_t timer_handle)
     lp_sw_timer_t *timer = (lp_sw_timer_t *)timer_handle;
 
     if (timer == NULL || timer->valid == false){
-        lp_core_printf("%s: Invalid timer\n", __func__);
+        printf("%s: %s Invalid timer\n", TAG, __func__);
         return -1;
     }
 

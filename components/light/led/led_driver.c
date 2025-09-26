@@ -55,12 +55,11 @@ static uint32_t hpoint = LEDC_DEFAULT_HPOINT;
 
 int led_driver_set_channel(uint8_t channel, uint8_t val)
 {
-
     /* LEDC_CHn_HPOINT: config hpoint */
     ledc_ll_set_hpoint(&LEDC, speed_mode, channel, hpoint);
     /* LEDC_CHn_DUTY: config duty */
     ledc_ll_set_duty_int_part(&LEDC, speed_mode, channel, (LEDC_MAX_DUTY * val / 100));
-    ledc_ll_set_duty_start(&LEDC, speed_mode, channel, true);
+    ledc_ll_set_duty_start(&LEDC, speed_mode, channel);
     /* LEDC_PARA_UP_CHn: enable the configuration above */
     if (speed_mode == LEDC_LOW_SPEED_MODE) {
         ledc_ll_ls_channel_update(&LEDC, speed_mode, channel);
@@ -114,7 +113,7 @@ void led_driver_deinit(void)
     for (int ch=LED_CHANNEL_NC+1; ch<LED_CHANNEL_MAX; ch++) {
         if (channel_mask | BIT(ch)) {
             ledc_ll_set_sig_out_en(&LEDC, speed_mode, ch, false);
-            ledc_ll_set_duty_start(&LEDC, speed_mode, ch, false);
+            ledc_ll_set_duty_start(&LEDC, speed_mode, ch);
             if (speed_mode == LEDC_LOW_SPEED_MODE) {
                 ledc_ll_ls_channel_update(&LEDC, speed_mode, ch);
             }

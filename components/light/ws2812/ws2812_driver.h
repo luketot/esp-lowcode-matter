@@ -1,6 +1,6 @@
 #pragma once
 
-#include "lp_sw_timer.h"
+#include "sw_timer.h"
 #include "color_format.h"
 #include "rmt.h"
 

@@ -1,0 +1,5 @@
+menu "Software Timer"
+    config MAX_SOFTWARE_TIMERS
+    int "Maximum number of timers"
+    default 4
+endmenu

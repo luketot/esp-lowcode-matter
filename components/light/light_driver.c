@@ -3,7 +3,7 @@
 #include "stdbool.h"
 
 #include "sdkconfig.h"
-#include "lp_sw_timer.h"
+#include "sw_timer.h"
 #include "led_driver.h"
 #include "ws2812_driver.h"
 #include "light_driver.h"
@@ -52,7 +52,7 @@ typedef struct {
     int total_ms;
     int rounds; /* used by effect timer handler */
     int effectStepTime;
-    lp_sw_timer_handle_t timer; /* timer */
+    sw_timer_handle_t timer; /* timer */
 } light_effect_t;
 
 typedef struct {
@@ -412,7 +412,7 @@ int light_driver_set_color_mode(uint8_t val)
     return ret;
 }
 
-static void light_effect_handler(lp_sw_timer_handle_t timer_handle, void *arg)
+static void light_effect_handler(sw_timer_handle_t timer_handle, void *arg)
 {
     switch (g_light.cur_effect.type) {
     case LIGHT_EFFECT_BLINK:
@@ -503,31 +503,31 @@ void light_driver_effect_start(light_effect_config_t *config, int speed, int tot
     light_driver_update();
 
     /* each time we start a new effect, stop the previous effect */
-    lp_sw_timer_delete(g_light.cur_effect.timer);
+    sw_timer_delete(g_light.cur_effect.timer);
 
     printf("effect(type=%d, max=%d, min=%d, speed=%d, total_ms=%d, timer=%p)\n",
         g_light.cur_effect.type, g_light.cur_effect.target_brightness + g_light.cur_effect.offset_brightness, g_light.cur_effect.offset_brightness,
         g_light.cur_effect.speed, g_light.cur_effect.total_ms, g_light.cur_effect.timer);
 
-    lp_sw_timer_config_t timer_cfg = {
+    sw_timer_config_t timer_cfg = {
         .arg = NULL,
         .handler = light_effect_handler,
         .periodic = true,
         .timeout_ms = effectStepTime, /* change brightness every half period */
     };
-    lp_sw_timer_handle_t timer = lp_sw_timer_create(&timer_cfg);
+    sw_timer_handle_t timer = sw_timer_create(&timer_cfg);
 
     /* timer */
     g_light.cur_effect.timer = timer;
     g_light.cur_effect.rounds = 0; /* reset effect rounds to 0 */
     g_light.cur_level = g_light.cur_level ? g_light.cur_level : 1;
     // start the effect
-    lp_sw_timer_start(g_light.cur_effect.timer);
+    sw_timer_start(g_light.cur_effect.timer);
 }
 
 void light_driver_effect_stop(void)
 {
     /* set power also set brightness to cur_brightness */
-    lp_sw_timer_delete(g_light.cur_effect.timer);
+    sw_timer_delete(g_light.cur_effect.timer);
     light_driver_set_power(g_light.cur_level);
 }

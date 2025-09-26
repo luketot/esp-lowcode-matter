@@ -13,7 +13,7 @@
 // limitations under the License.
 
 /**
- * @file lp_sw_timer.h
+ * @file sw_timer.h
  * @brief Software timer implementation for LP core
  *
  * This component provides a software timer implementation for the Low Power (LP) core,
@@ -29,10 +29,10 @@ extern "C" {
 #endif
 
 /** @brief Handle type for the software timer */
-typedef void *lp_sw_timer_handle_t;
+typedef void *sw_timer_handle_t;
 
 /** @brief Callback function type for timer events */
-typedef void (* lp_sw_timer_cb_t)(lp_sw_timer_handle_t timer_handle, void *user_data);
+typedef void (* sw_timer_cb_t)(sw_timer_handle_t timer_handle, void *user_data);
 
 /**
  * @brief Configuration structure for software timer
@@ -40,17 +40,17 @@ typedef void (* lp_sw_timer_cb_t)(lp_sw_timer_handle_t timer_handle, void *user_
 typedef struct {
     bool periodic;              /** Set true for auto-reload timer, false for one-shot */
     int timeout_ms;             /** Timeout period in milliseconds */
-    lp_sw_timer_cb_t handler;   /** Callback function to be called when timer expires */
+    sw_timer_cb_t handler;   /** Callback function to be called when timer expires */
     void *arg;                  /** User data to pass to callback function */
-} lp_sw_timer_config_t;
+} sw_timer_config_t;
 
 /**
  * @brief Create a new software timer
  *
  * @param config Pointer to timer configuration structure
- * @return lp_sw_timer_handle_t Handle to the created timer, NULL if creation failed
+ * @return sw_timer_handle_t Handle to the created timer, NULL if creation failed
  */
-lp_sw_timer_handle_t lp_sw_timer_create(lp_sw_timer_config_t *config);
+sw_timer_handle_t sw_timer_create(sw_timer_config_t *config);
 
 /**
  * @brief Delete a software timer
@@ -58,7 +58,7 @@ lp_sw_timer_handle_t lp_sw_timer_create(lp_sw_timer_config_t *config);
  * @param timer_handle Handle of the timer to delete
  * @return int 0 on success, negative value on error
  */
-int lp_sw_timer_delete(lp_sw_timer_handle_t timer_handle);
+int sw_timer_delete(sw_timer_handle_t timer_handle);
 
 /**
  * @brief Start a software timer
@@ -66,7 +66,7 @@ int lp_sw_timer_delete(lp_sw_timer_handle_t timer_handle);
  * @param timer_handle Handle of the timer to start
  * @return int 0 on success, negative value on error
  */
-int lp_sw_timer_start(lp_sw_timer_handle_t timer_handle);
+int sw_timer_start(sw_timer_handle_t timer_handle);
 
 /**
  * @brief Stop a software timer
@@ -74,7 +74,7 @@ int lp_sw_timer_start(lp_sw_timer_handle_t timer_handle);
  * @param timer_handle Handle of the timer to stop
  * @return int 0 on success, negative value on error
  */
-int lp_sw_timer_stop(lp_sw_timer_handle_t timer_handle);
+int sw_timer_stop(sw_timer_handle_t timer_handle);
 
 /**
  * @brief Run the timer system
@@ -82,7 +82,7 @@ int lp_sw_timer_stop(lp_sw_timer_handle_t timer_handle);
  * This function should be called periodically to process timer events.
  * It checks for expired timers and calls their callbacks.
  */
-void lp_sw_timer_run(void);
+void sw_timer_run(void);
 
 #ifdef __cplusplus
 }

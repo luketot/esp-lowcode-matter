@@ -19,7 +19,7 @@
 #include "soc/pmu_icg_mapping.h"
 #include "soc/pmu_struct.h"
 
-#include "lp_sw_timer.h"
+#include "sw_timer.h"
 
 #include "led_driver.h"
 

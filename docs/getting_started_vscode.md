@@ -31,6 +31,7 @@ You can either use VS Code directly (continue reading below) or also use [Termin
 These **buttons** are available on the **bottom of the screen (status bar)**. There are also VS Code commands (ctrl/cmd + shift + p) available with **"Lowcode:"** prefix for the same.
 
 * **Select Product**: Start by selecting the product that you want to create
+* **Select Chip**: Select the chip and corresponding network type that you want to use with the product.
 * **Select Port**: Connect your **esp32c6** board to your computer via USB, and select the port. Refer [Port Permissions](./hardware_setup.md#port-permissions-for-usb-to-serial-converters) for OS specific instructions.
 * **Prepare Device**: This will erase the flash on the device and flash the prebuilt LowCode framework binaries to your esp32c6 board
 * **Upload Configuration**: This will generate the required device certificates and the qr code for the device and flash them to the device

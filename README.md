@@ -33,6 +33,8 @@ This will launch the web VS Code in the browser and get all the required depende
 * This might take about **5 minutes** to setup
 * In the process, the codespace will **restart** a few times
 
+(Note: Although it uses and installs esp-idf and esp-amp, neither of them is added to the workspace.)
+
 Now you should be able to see the full fledged VS Code. There should be files and folders present in the left panel and the terminal and the output windows on the bottom. There should also be a status bar at the bottom with some buttons for LowCode.
 
 ### Start Development
@@ -50,6 +52,7 @@ The subsequent development steps are aligned in a sequence of buttons to take yo
 There are also Codespaces commands (ctrl/cmd + shift + p) available with **"Lowcode:"** prefix for the same.
 
 * **Select Product**: Start by selecting the product that you want to create which will also open the product code
+* **Select Chip**: Select the chip and corresponding network type that you want to use with the product.
 * **Select Port**: Connect your **esp32c6** board to your computer via USB, and select the port. Refer [Port Permissions](./hardware_setup.md#port-permissions-for-usb-to-serial-converters) for OS specific instructions.
 * **Prepare Device**: This will erase the flash on the device and flash the prebuilt LowCode framework binaries to your esp32c6 board
 * **Upload Configuration**: This will generate the required device certificates and the qr code for the device and flash them to the device

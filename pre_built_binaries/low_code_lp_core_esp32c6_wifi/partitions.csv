@@ -1,0 +1,14 @@
+# Name,            Type, SubType,  Offset,   Size,     Flags,     Comments
+# bootloader,      ,     ,         0x0,      0xC000,   encrypted, # Reserved for bootloader
+# partition_table, ,     ,         0xC000,   0x1000,   encrypted, # Reserved for partition table
+esp_secure_cert,   0x3F, ,         0xD000,   0x2000,   encrypted,
+nvs_keys,          data, nvs_keys, 0xF000,   0x1000,   encrypted,
+ota_0,             app,  ota_0,    0x10000,  0x1E1000, encrypted, # Should be 0x10000 aligned. Additional 4kb for secure boot signature
+phy_init,          data, phy,      0x1F1000, 0x1000,   encrypted,
+fctry,             data, nvs,      0x1F2000, 0x6000,   ,          # NVS encrypted
+otadata,           data, ota,      0x1F8000, 0x2000,   encrypted,
+nvs,               data, nvs,      0x1FA000, 0xD000,   ,          # NVS encrypted
+nvs_misc,          data, nvs,      0x207000, 0x5000,   ,          # NVS encrypted
+lp_core,           data, 0x40,     0x20C000, 0x14000,  ,          # Reserved for future use
+ota_1,             app,  ota_1,    0x220000, 0x1D1000, encrypted, # Should be 0x10000 aligned. Additional 4kb for secure boot signature
+coredump,          data, coredump, 0x3F1000, 0xF000,   encrypted,

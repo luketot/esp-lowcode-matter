@@ -1,19 +1,23 @@
-#include "stdlib.h"
-#include "stdbool.h"
-#include "stdint.h"
-#include "limits.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdbool.h>
+#include <stdint.h>
+#include <limits.h>
 
-#include "riscv/rv_utils.h"
-#include "ulp_lp_core_print.h"
-#include "lp_sw_timer.h"
+#include <riscv/rv_utils.h>
+#include <ulp_lp_core_print.h>
 
-#ifdef CONFIG_LP_SW_TIMER_MAX_ITEMS
-#define LP_SW_TIMER_MAX_ITEMS CONFIG_LP_SW_TIMER_MAX_ITEMS
+#include "sw_timer.h"
+
+#ifdef CONFIG_MAX_SOFTWARE_TIMERS
+#define SW_TIMER_MAX_ITEMS CONFIG_MAX_SOFTWARE_TIMERS
 #else
-#define  LP_SW_TIMER_MAX_ITEMS 10
-#endif /* CONFIG_LP_SW_TIMER_MAX_ITEMS */
+#define  SW_TIMER_MAX_ITEMS 10
+#endif /* CONFIG_MAX_SOFTWARE_TIMERS */
 
 #define LP_CORE_FREQ_IN_KHZ 16000
+
+static const char *TAG = "sw_timer";
 
 typedef struct {
     bool active; /* false means a suspended/uninitialized timer */
@@ -22,33 +26,33 @@ typedef struct {
     uint32_t last_tick; /* last tick */
     int64_t remain_ticks; /* remain ticks to call the timer callback */
     int timeout_ms; /* timeout period */
-    lp_sw_timer_cb_t handler; /* callback */
+    sw_timer_cb_t handler; /* callback */
     void *arg;
-} lp_sw_timer_t;
+} sw_timer_t;
 
 /* zerocode timer */
-static lp_sw_timer_t g_timers[LP_SW_TIMER_MAX_ITEMS];
+static sw_timer_t g_timers[SW_TIMER_MAX_ITEMS];
 
 /**
  * @brief create zerocode timer
  *
  * @return handle if on available entry, return NULL
 */
-lp_sw_timer_handle_t lp_sw_timer_create(lp_sw_timer_config_t *config)
+sw_timer_handle_t sw_timer_create(sw_timer_config_t *config)
 {
     if (config->handler == NULL) {
-        lp_core_printf("%s: Invalid handler\n", __func__);
+        printf("%s: %s Invalid handler\n", TAG, __func__);
         return NULL;
     }
 
     if (config->periodic == true && config->timeout_ms == 0) {
-        lp_core_printf("%s: Invalid periodic timer with timeout_ms=0\n", __func__);
+        printf("%s: %s Invalid periodic timer with timeout_ms=0\n", TAG, __func__);
         return NULL;
     }
 
-    lp_sw_timer_t *timer = NULL;
+    sw_timer_t *timer = NULL;
 
-    for (int i=0; i<LP_SW_TIMER_MAX_ITEMS; i++) {
+    for (int i=0; i<SW_TIMER_MAX_ITEMS; i++) {
         if (!g_timers[i].valid) {
             timer = &(g_timers[i]);
             break;
@@ -64,22 +68,22 @@ lp_sw_timer_handle_t lp_sw_timer_create(lp_sw_timer_config_t *config)
         timer->periodic = config->periodic;
     }
     else {
-        lp_core_printf("Lack of memory for lp_sw_timer\n");
+        printf("%s: Lack of memory for sw_timer\n", TAG);
     }
 
-    return (lp_sw_timer_handle_t)timer;
+    return (sw_timer_handle_t)timer;
 }
 
 /**
  * @brief delete a timer
 */
-int lp_sw_timer_delete(lp_sw_timer_handle_t timer_handle)
+int sw_timer_delete(sw_timer_handle_t timer_handle)
 {
     if (timer_handle == NULL){
         return -1;
     }
 
-    lp_sw_timer_t *timer = (lp_sw_timer_t *)timer_handle;
+    sw_timer_t *timer = (sw_timer_t *)timer_handle;
     timer->active = false;
     timer->handler = NULL;
     timer->arg = NULL;
@@ -92,11 +96,11 @@ int lp_sw_timer_delete(lp_sw_timer_handle_t timer_handle)
  * @brief start timer
  *
 */
-int lp_sw_timer_start(lp_sw_timer_handle_t timer_handle)
+int sw_timer_start(sw_timer_handle_t timer_handle)
 {
-    lp_sw_timer_t *timer = (lp_sw_timer_t *)timer_handle;
+    sw_timer_t *timer = (sw_timer_t *)timer_handle;
     if (timer == NULL || timer->valid == false){
-        lp_core_printf("%s: Invalid timer\n", __func__);
+        printf("%s: %s Invalid timer\n", TAG, __func__);
         return -1;
     }
 
@@ -106,7 +110,7 @@ int lp_sw_timer_start(lp_sw_timer_handle_t timer_handle)
     if (timer->remain_ticks == 0) {
         /* if remain_ticks=0, call handler immediately and stop timer */
         timer->handler(timer_handle, timer->arg);
-        lp_sw_timer_stop(timer);
+        sw_timer_stop(timer);
     }
     else {
         /* update timer's last tick */
@@ -122,12 +126,12 @@ int lp_sw_timer_start(lp_sw_timer_handle_t timer_handle)
  *
  * update the last_tick & remain_ticks immediately
 */
-int lp_sw_timer_stop(lp_sw_timer_handle_t timer_handle)
+int sw_timer_stop(sw_timer_handle_t timer_handle)
 {
-    lp_sw_timer_t *timer = (lp_sw_timer_t *)timer_handle;
+    sw_timer_t *timer = (sw_timer_t *)timer_handle;
 
     if (timer == NULL || timer->valid == false){
-        lp_core_printf("%s: Invalid timer\n", __func__);
+        printf("%s: %s Invalid timer\n", TAG, __func__);
         return -1;
     }
 
@@ -140,9 +144,9 @@ int lp_sw_timer_stop(lp_sw_timer_handle_t timer_handle)
 /**
  * @brief call from main function to update the timer list
 */
-void lp_sw_timer_run(void)
+void sw_timer_run(void)
 {
-    for (int i=0; i<LP_SW_TIMER_MAX_ITEMS; i++) {
+    for (int i=0; i<SW_TIMER_MAX_ITEMS; i++) {
         if (g_timers[i].valid && g_timers[i].active) {
             /* calculate escaped ticks & update last tick */
             uint32_t tick = RV_READ_CSR(mcycle); /* bugfix: time_gap overflow when timer started inside another timer cb */
@@ -154,9 +158,9 @@ void lp_sw_timer_run(void)
                 /* handler may delete/stop timer. update timer status before executing handler */
                 if (g_timers[i].periodic) {
                     /* periodic, reload timer. if not, stop timer */
-                    lp_sw_timer_start(&(g_timers[i]));
+                    sw_timer_start(&(g_timers[i]));
                 } else {
-                    lp_sw_timer_stop(&(g_timers[i]));
+                    sw_timer_stop(&(g_timers[i]));
                 }
 
                 /* call handler */

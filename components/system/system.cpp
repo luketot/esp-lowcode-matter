@@ -19,7 +19,7 @@
 #include <soc/gpio_reg.h>
 #include <soc/interrupt_matrix_struct.h>
 #include <soc/gpio_num.h>
-#include <lp_sw_timer.h>
+#include <sw_timer.h>
 #include <esp_amp_platform.h>
 #include <low_code_transport.h>
 
@@ -37,7 +37,7 @@ void system_setup()
 
 void system_timer_update()
 {
-    lp_sw_timer_run();
+    sw_timer_run();
 }
 
 void system_sleep(uint32_t seconds)
@@ -67,28 +67,28 @@ uint32_t system_get_time()
 
 system_timer_handle_t system_timer_create(system_timer_cb_t callback, void *arg, int timeout_ms, bool periodic)
 {
-    lp_sw_timer_config_t timer_cfg = {
+    sw_timer_config_t timer_cfg = {
         .periodic = periodic,
         .timeout_ms = timeout_ms,
         .handler = callback,
         .arg = arg
     };
-    return lp_sw_timer_create(&timer_cfg);
+    return sw_timer_create(&timer_cfg);
 }
 
 int system_timer_start(system_timer_handle_t handle)
 {
-    return lp_sw_timer_start(handle);
+    return sw_timer_start(handle);
 }
 
 int system_timer_stop(system_timer_handle_t handle)
 {
-    return lp_sw_timer_stop(handle);
+    return sw_timer_stop(handle);
 }
 
 int system_timer_delete(system_timer_handle_t handle)
 {
-    return lp_sw_timer_delete(handle);
+    return sw_timer_delete(handle);
 }
 
 void system_enable_software_interrupt()

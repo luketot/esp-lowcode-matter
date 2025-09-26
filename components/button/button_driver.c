@@ -30,7 +30,7 @@
 #include "ulp_lp_core_utils.h"
 #include "ulp_lp_core_interrupts.h"
 
-#include "lp_sw_timer.h"
+#include "sw_timer.h"
 
 #include "button_driver.h"
 
@@ -88,8 +88,8 @@ typedef struct {
 typedef struct {
     uint16_t long_press_time;
     uint16_t short_press_time;
-    lp_sw_timer_handle_t timer_debounce;
-    lp_sw_timer_handle_t timer_long_press;
+    sw_timer_handle_t timer_debounce;
+    sw_timer_handle_t timer_long_press;
     uint32_t tick_press_down; /* tick when button is push down */
     gpio_num_t gpio;
     uint8_t state: 4;
@@ -107,13 +107,13 @@ static bool hp_gpio_intr_handler_registered = false;
 
 static int hp_gpio_sw_intr_handler(void *arg)
 {
-    uint32_t *pin_mask = (uint32_t*) esp_amp_sys_info_get(0x00, NULL);
+    uint32_t *pin_mask = (uint32_t*) esp_amp_sys_info_get(0x00, NULL, SYS_INFO_CAP_HP);
     button_driver_isr_handler(pin_mask);
     return 0;
 }
 #endif
 
-static void btn_timer_cb_debounce(lp_sw_timer_handle_t timer, void *args)
+static void btn_timer_cb_debounce(sw_timer_handle_t timer, void *args)
 {
     button_dev_t *button = (button_dev_t *)args;
     switch (button->state) {
@@ -121,7 +121,7 @@ static void btn_timer_cb_debounce(lp_sw_timer_handle_t timer, void *args)
         if (GPIO_GET_LEVEL(button->gpio) == button->active_level) {
             button->state = BUTTON_STATE_PRESS_DOWN;
             button->tick_press_down = RV_READ_CSR(mcycle);
-            lp_sw_timer_start(button->timer_long_press);
+            sw_timer_start(button->timer_long_press);
         }
         else {
             button->state = BUTTON_STATE_NO_PRESS;
@@ -132,7 +132,7 @@ static void btn_timer_cb_debounce(lp_sw_timer_handle_t timer, void *args)
             button->state = BUTTON_STATE_RELEASE_UP;
 
             /* stop long press start counting */
-            lp_sw_timer_stop(button->timer_long_press);
+            sw_timer_stop(button->timer_long_press);
 
             /* press up event */
             if (button->cb_info[BUTTON_PRESS_UP].cb) {
@@ -165,7 +165,7 @@ static void btn_timer_cb_debounce(lp_sw_timer_handle_t timer, void *args)
     }
 }
 
-static void btn_timer_cb_long_press(lp_sw_timer_handle_t timer, void *args)
+static void btn_timer_cb_long_press(sw_timer_handle_t timer, void *args)
 {
     button_dev_t *button = (button_dev_t *)args;
     switch(button->state) {
@@ -229,13 +229,13 @@ button_handle_t button_driver_create(const button_config_t *config)
 #endif /* CONFIG_BUTTON_DRIVER_USE_HP_GPIO */
 
     /* init timer to debounce */
-    lp_sw_timer_config_t timer_debounce_cfg = {
+    sw_timer_config_t timer_debounce_cfg = {
         .arg = button,
         .handler = btn_timer_cb_debounce,
         .periodic = false,
         .timeout_ms = BUTTON_DEBOUNCE_TIME,
     };
-    lp_sw_timer_handle_t timer_debounce = lp_sw_timer_create(&timer_debounce_cfg);
+    sw_timer_handle_t timer_debounce = sw_timer_create(&timer_debounce_cfg);
 
     if (timer_debounce) {
         button->timer_debounce = timer_debounce;
@@ -246,14 +246,14 @@ button_handle_t button_driver_create(const button_config_t *config)
     }
 
     /* init timer to long press */
-    lp_sw_timer_config_t timer_long_press_cfg = {
+    sw_timer_config_t timer_long_press_cfg = {
         .arg = button,
         .handler = btn_timer_cb_long_press,
         .periodic = false,
         .timeout_ms = long_press_time,
     };
 
-    lp_sw_timer_handle_t timer_long_press = lp_sw_timer_create(&timer_long_press_cfg);
+    sw_timer_handle_t timer_long_press = sw_timer_create(&timer_long_press_cfg);
 
     if (timer_long_press) {
         button->timer_long_press = timer_long_press;
@@ -330,8 +330,8 @@ int button_driver_delete(button_handle_t btn_handle)
     }
 
     /* delete timer */
-    lp_sw_timer_delete(button->timer_debounce);
-    lp_sw_timer_delete(button->timer_long_press);
+    sw_timer_delete(button->timer_debounce);
+    sw_timer_delete(button->timer_long_press);
 
     for (int i=0; i<BUTTON_EVENT_MAX; i++) {
         button->cb_info[i].cb = NULL;
@@ -384,13 +384,13 @@ static void button_driver_isr_handler(uint32_t* pin_mask)
                 case BUTTON_STATE_NO_PRESS:
                     if (GPIO_GET_LEVEL(button->gpio) == button->active_level) {
                         button->state = BUTTON_STATE_DEBOUNCE_PRESS_T;
-                        lp_sw_timer_start(button->timer_debounce);
+                        sw_timer_start(button->timer_debounce);
                     }
                     break;
                 case BUTTON_STATE_PRESS_DOWN:
                     if (GPIO_GET_LEVEL(button->gpio) != button->active_level) {
                         button->state = BUTTON_STATE_DEBOUNCE_RELEASE_T;
-                        lp_sw_timer_start(button->timer_debounce);
+                        sw_timer_start(button->timer_debounce);
                     }
                     break;
                 default:

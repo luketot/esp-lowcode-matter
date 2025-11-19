@@ -14,12 +14,12 @@
 
 #include <stdio.h>
 
-#include <system.h> // Provides system_digital_write
+#include <system.h> // Provides system_digital_write and pin_level_t enum
 #include <low_code.h>
 
 #include "app_priv.h"
 
-// --- NEW: Includes for Software Timer ---
+// --- Includes for Software Timer ---
 #include "sw_timer.h" 
 
 // --- Define the GPIO pin for the remote trigger (using GPIO 10 for D10) ---
@@ -27,6 +27,10 @@
 
 // --- Define the pulse duration in milliseconds (e.g., 200ms) ---
 #define TRIGGER_PULSE_MS 200
+
+// --- POWER FEATURE ID DEFINITION ---
+// This ID is used for the On/Off cluster (Power control).
+#define LOW_CODE_FEATURE_ID_POWER 1001 
 
 // --- Global Software Timer Handle ---
 static sw_timer_handle_t s_trigger_timer = NULL;
@@ -36,20 +40,27 @@ static const char *TAG = "app_main";
 // --- Timer Callback: Sets the GPIO pin LOW when the pulse duration is complete ---
 static void trigger_off_cb(void *arg)
 {
-    // 3. Set the pin LOW using the system API
-    system_digital_write(GARAGE_DOOR_TRIGGER_PIN, 0);
+    // 3. Set the pin LOW using the system API and the correct enum value
+    system_digital_write(GARAGE_DOOR_TRIGGER_PIN, LOW);
     printf("%s: Trigger pulse finished (Software Timer complete).\n", TAG);
 }
 
 // --- Function to initialize the GPIO pin and the software timer ---
 static int app_driver_gpio_init()
 {
-    // Set the initial state to inactive (low) using the system API.
-    // The 'system_digital_write' call typically handles the pin configuration implicitly.
-    system_digital_write(GARAGE_DOOR_TRIGGER_PIN, 0);
+    // Set the initial state to inactive (low) using the system API and the correct enum value.
+    system_digital_write(GARAGE_DOOR_TRIGGER_PIN, LOW);
 
-    // Initialize the one-shot software timer
-    s_trigger_timer = sw_timer_create(TRIGGER_PULSE_MS, false, trigger_off_cb, NULL);
+    // Define the configuration structure for the software timer
+    sw_timer_config_t config = {
+        .timer_period_ms = TRIGGER_PULSE_MS,
+        .auto_reload = false,
+        .callback = trigger_off_cb,
+        .arg = NULL,
+    };
+
+    // Initialize the one-shot software timer using the configuration struct
+    s_trigger_timer = sw_timer_create(&config);
     if (!s_trigger_timer) {
         printf("%s: ERROR: Failed to create software timer!\n", TAG);
         return -1;
@@ -64,8 +75,8 @@ static void trigger_momentary_pulse()
 {
     printf("%s: Starting momentary trigger pulse.\n", TAG);
 
-    // 1. Set the pin HIGH using the system API
-    system_digital_write(GARAGE_DOOR_TRIGGER_PIN, 1);
+    // 1. Set the pin HIGH using the system API and the correct enum value
+    system_digital_write(GARAGE_DOOR_TRIGGER_PIN, HIGH);
 
     // 2. Start the timer to set the pin LOW after TRIGGER_PULSE_MS
     sw_timer_start(s_trigger_timer);
@@ -99,6 +110,7 @@ int feature_update_from_system(low_code_feature_data_t *data)
 
     if (endpoint_id == 1) {
         if (feature_id == LOW_CODE_FEATURE_ID_POWER) {  // Power
+            // Note: The extended character has been removed from this line
             bool power_value = *(bool *)data->value.value;
             printf("%s: Feature update: power: %d\n", TAG, power_value);
             

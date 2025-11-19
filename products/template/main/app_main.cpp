@@ -51,7 +51,8 @@ static int app_driver_gpio_init()
 
     // Define the configuration structure for the software timer
     sw_timer_config_t config = {
-        .period_ms = TRIGGER_PULSE_MS,
+        // FIX: Changed 'period_ms' back to 'timer_period_ms'
+        .timer_period_ms = TRIGGER_PULSE_MS,
         .auto_reload = false,
         .callback = trigger_off_cb,
         .arg = NULL,
@@ -120,7 +121,8 @@ int feature_update_from_system(low_code_feature_data_t *data)
                 // Immediately report the state back as OFF (false)
                 // This makes the Matter controller treat the device as a momentary button
                 bool reset_value = false;
-                low_code_send_feature_update_to_system(endpoint_id, 
+                // FIX: Corrected function name to low_code_feature_update_to_system
+                low_code_feature_update_to_system(endpoint_id, 
                                                       LOW_CODE_FEATURE_ID_POWER, 
                                                       &reset_value);
             }

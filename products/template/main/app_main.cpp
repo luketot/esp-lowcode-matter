@@ -28,9 +28,7 @@
 // --- Define the pulse duration in milliseconds (e.g., 200ms) ---
 #define TRIGGER_PULSE_MS 200
 
-// --- POWER FEATURE ID DEFINITION ---
-// This ID is used for the On/Off cluster (Power control).
-#define LOW_CODE_FEATURE_ID_POWER 1001 
+// The Matter Feature ID for Power (On/Off cluster) is provided by the low_code header.
 
 // --- Global Software Timer Handle ---
 static sw_timer_handle_t s_trigger_timer = NULL;
@@ -53,7 +51,7 @@ static int app_driver_gpio_init()
 
     // Define the configuration structure for the software timer
     sw_timer_config_t config = {
-        .timer_period_ms = TRIGGER_PULSE_MS,
+        .period_ms = TRIGGER_PULSE_MS,
         .auto_reload = false,
         .callback = trigger_off_cb,
         .arg = NULL,
@@ -109,8 +107,8 @@ int feature_update_from_system(low_code_feature_data_t *data)
     uint32_t feature_id = data->details.feature_id;
 
     if (endpoint_id == 1) {
-        if (feature_id == LOW_CODE_FEATURE_ID_POWER) {  // Power
-            // Note: The extended character has been removed from this line
+        // Now using the externally defined LOW_CODE_FEATURE_ID_POWER
+        if (feature_id == LOW_CODE_FEATURE_ID_POWER) { 
             bool power_value = *(bool *)data->value.value;
             printf("%s: Feature update: power: %d\n", TAG, power_value);
             

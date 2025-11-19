@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//     http://www.apache.org/licenses/LICENSE-20.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,22 +18,28 @@
 #include <low_code.h>
 
 #include "app_priv.h"
+
+// --- REQUIRED: Includes for FreeRTOS task delay functionality (Needed for momentary pulse) ---
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 
+// --- REQUIRED: Include the ESP-IDF GPIO driver header ---
 #include "driver/gpio.h"
 
+// --- Define the GPIO pin for the remote trigger (using GPIO 10 for D10) ---
 #define GARAGE_DOOR_TRIGGER_PIN GPIO_NUM_10
 
+// --- Define the pulse duration in milliseconds (e.g., 200ms) ---
 #define TRIGGER_PULSE_MS 200
 
-#define LOW_CODE_FEATURE_ID_BARRIER_CONTROL 7001
-#define LOW_CODE_FEATURE_ID_BARRIER_CURRENT_POSITION 7002
+// --- POWER FEATURE ID DEFINITION ---
+// This ID is used for the On/Off cluster (Power control).
+#define LOW_CODE_FEATURE_ID_POWER 1001 
+
 
 static const char *TAG = "app_main";
 
-static bool s_door_state_closed = true;
-
+// --- Function to initialize the GPIO pin ---
 static int app_driver_gpio_init()
 {
     // Configure the GPIO pin as a push-pull output
@@ -47,6 +53,7 @@ static int app_driver_gpio_init()
     return 0;
 }
 
+// --- Function to generate a momentary pulse on the trigger pin ---
 static void trigger_momentary_pulse()
 {
     printf("%s: Starting momentary trigger pulse.\n", TAG);
@@ -63,6 +70,7 @@ static void trigger_momentary_pulse()
     printf("%s: Trigger pulse finished.\n", TAG);
 }
 
+
 static void setup()
 {
     /* Register callbacks */
@@ -70,7 +78,8 @@ static void setup()
 
     /* Initialize driver */
     app_driver_init();
-
+    
+    // Initialize the garage door trigger pin 
     app_driver_gpio_init();
 }
 
@@ -88,28 +97,24 @@ int feature_update_from_system(low_code_feature_data_t *data)
     uint32_t feature_id = data->details.feature_id;
 
     if (endpoint_id == 1) {
-        if (feature_id == LOW_CODE_FEATURE_ID_BARRIER_CONTROL) {  // TargetPosition
-            // The value received is the target position (0 for closed, 100 for open).
-            uint8_t target_position_value = *(uint8_t *)data->value.value;
-            printf("%s: Feature update: Barrier Target Position: %d. Triggering pulse.\n", TAG, target_position_value);
-
-            // Trigger the actual remote pulse
-            trigger_momentary_pulse();
-
-            // Toggle the local assumed state
-            s_door_state_closed = !s_door_state_closed;
-
-            // Report the new current position back to the system to simulate movement.
-            // Barrier Control CurrentPosition attribute: 0 = Open, 100 = Closed.
-            uint8_t current_position = s_door_state_closed ? 100 : 0;
-            printf("%s: Reporting new assumed state: %s (%d)\n", TAG, 
-                   s_door_state_closed ? "Closed" : "Open", current_position);
-
-            low_code_send_feature_update_to_system(endpoint_id, 
-                                                  LOW_CODE_FEATURE_ID_BARRIER_CURRENT_POSITION, 
-                                                  &current_position);
-
-            return 0; // Return success after triggering the pulse
+        if (feature_id == LOW_CODE_FEATURE_ID_POWER) {  // Power
+            bool power_value = *(bool *)data->value.value;
+            printf("%s: Feature update: power: %d\n", TAG, power_value);
+            
+            // Only trigger the pulse when the switch is turned ON
+            if (power_value) {
+                // Trigger the actual remote pulse
+                trigger_momentary_pulse();
+                
+                // Immediately report the state back as OFF (false)
+                // This makes the Matter controller treat the device as a momentary button
+                bool reset_value = false;
+                low_code_send_feature_update_to_system(endpoint_id, 
+                                                      LOW_CODE_FEATURE_ID_POWER, 
+                                                      &reset_value);
+            }
+            
+            return 0; 
         }
     }
 

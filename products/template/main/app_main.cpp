@@ -19,11 +19,8 @@
 
 #include "app_priv.h"
 
-// --- REQUIRED: Includes for FreeRTOS task delay functionality (Needed for momentary pulse) ---
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-
-// --- REQUIRED: Include the ESP-IDF GPIO driver header ---
+// --- NEW: Includes for Software Timer and GPIO driver ---
+#include "sw_timer.h" 
 #include "driver/gpio.h"
 
 // --- Define the GPIO pin for the remote trigger (using GPIO 10 for D10) ---
@@ -36,10 +33,20 @@
 // This ID is used for the On/Off cluster (Power control).
 #define LOW_CODE_FEATURE_ID_POWER 1001 
 
+// --- Global Software Timer Handle ---
+static sw_timer_handle_t s_trigger_timer = NULL;
 
 static const char *TAG = "app_main";
 
-// --- Function to initialize the GPIO pin ---
+// --- Timer Callback: Sets the GPIO pin LOW when the pulse duration is complete ---
+static void trigger_off_cb(void *arg)
+{
+    // 3. Set the pin LOW to deactivate the relay
+    gpio_set_level(GARAGE_DOOR_TRIGGER_PIN, 0);
+    printf("%s: Trigger pulse finished (Software Timer complete).\n", TAG);
+}
+
+// --- Function to initialize the GPIO pin and the software timer ---
 static int app_driver_gpio_init()
 {
     // Configure the GPIO pin as a push-pull output
@@ -49,7 +56,14 @@ static int app_driver_gpio_init()
     // Set the initial state to inactive (low)
     gpio_set_level(GARAGE_DOOR_TRIGGER_PIN, 0);
 
-    printf("%s: Initialized GPIO %d for trigger.\n", TAG, GARAGE_DOOR_TRIGGER_PIN);
+    // Initialize the one-shot software timer
+    s_trigger_timer = sw_timer_create(TRIGGER_PULSE_MS, false, trigger_off_cb, NULL);
+    if (!s_trigger_timer) {
+        printf("%s: ERROR: Failed to create software timer!\n", TAG);
+        return -1;
+    }
+
+    printf("%s: Initialized GPIO %d and Software Timer for trigger.\n", TAG, GARAGE_DOOR_TRIGGER_PIN);
     return 0;
 }
 
@@ -61,13 +75,8 @@ static void trigger_momentary_pulse()
     // 1. Set the pin HIGH to activate the relay
     gpio_set_level(GARAGE_DOOR_TRIGGER_PIN, 1);
 
-    // 2. Wait for the defined pulse duration (200ms)
-    vTaskDelay(pdMS_TO_TICKS(TRIGGER_PULSE_MS));
-
-    // 3. Set the pin LOW to deactivate the relay
-    gpio_set_level(GARAGE_DOOR_TRIGGER_PIN, 0);
-
-    printf("%s: Trigger pulse finished.\n", TAG);
+    // 2. Start the timer to set the pin LOW after TRIGGER_PULSE_MS
+    sw_timer_start(s_trigger_timer);
 }
 
 
@@ -79,7 +88,7 @@ static void setup()
     /* Initialize driver */
     app_driver_init();
     
-    // Initialize the garage door trigger pin 
+    // Initialize the garage door trigger pin and software timer
     app_driver_gpio_init();
 }
 

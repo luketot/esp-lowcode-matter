@@ -51,8 +51,8 @@ static int app_driver_gpio_init()
 
     // Define the configuration structure for the software timer
     sw_timer_config_t config = {
-        // FIX: Changed 'period_ms' back to 'timer_period_ms'
-        .timer_period_ms = TRIGGER_PULSE_MS,
+        // FIX: Assuming the correct field name is 'period'
+        .period = TRIGGER_PULSE_MS,
         .auto_reload = false,
         .callback = trigger_off_cb,
         .arg = NULL,
@@ -108,7 +108,7 @@ int feature_update_from_system(low_code_feature_data_t *data)
     uint32_t feature_id = data->details.feature_id;
 
     if (endpoint_id == 1) {
-        // Now using the externally defined LOW_CODE_FEATURE_ID_POWER
+        // Check for the Power Feature ID (On/Off cluster)
         if (feature_id == LOW_CODE_FEATURE_ID_POWER) { 
             bool power_value = *(bool *)data->value.value;
             printf("%s: Feature update: power: %d\n", TAG, power_value);
@@ -121,10 +121,21 @@ int feature_update_from_system(low_code_feature_data_t *data)
                 // Immediately report the state back as OFF (false)
                 // This makes the Matter controller treat the device as a momentary button
                 bool reset_value = false;
-                // FIX: Corrected function name to low_code_feature_update_to_system
-                low_code_feature_update_to_system(endpoint_id, 
-                                                      LOW_CODE_FEATURE_ID_POWER, 
-                                                      &reset_value);
+
+                // FIX: low_code_feature_update_to_system expects a single struct pointer.
+                low_code_feature_data_t reset_data = {
+                    .details = {
+                        .endpoint_id = endpoint_id,
+                        .feature_id = LOW_CODE_FEATURE_ID_POWER,
+                    },
+                    .value = {
+                        .size = sizeof(bool),
+                        .type = LOW_CODE_FEATURE_VALUE_TYPE_BOOL, // Assuming this enum is available
+                        .value = &reset_value, // Pointer to the false value
+                    }
+                };
+
+                low_code_feature_update_to_system(&reset_data);
             }
             
             return 0; 

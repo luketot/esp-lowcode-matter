@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-20.0
+//     http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -14,24 +14,19 @@
 
 #include <stdio.h>
 
-#include <system.h>
+#include <system.h> // Provides system_digital_write
 #include <low_code.h>
 
 #include "app_priv.h"
 
-// --- NEW: Includes for Software Timer and GPIO driver ---
+// --- NEW: Includes for Software Timer ---
 #include "sw_timer.h" 
-#include "driver/gpio.h"
 
 // --- Define the GPIO pin for the remote trigger (using GPIO 10 for D10) ---
-#define GARAGE_DOOR_TRIGGER_PIN GPIO_NUM_10
+#define GARAGE_DOOR_TRIGGER_PIN 10 // Using the pin number directly for the system API
 
 // --- Define the pulse duration in milliseconds (e.g., 200ms) ---
 #define TRIGGER_PULSE_MS 200
-
-// --- POWER FEATURE ID DEFINITION ---
-// This ID is used for the On/Off cluster (Power control).
-#define LOW_CODE_FEATURE_ID_POWER 1001 
 
 // --- Global Software Timer Handle ---
 static sw_timer_handle_t s_trigger_timer = NULL;
@@ -41,20 +36,17 @@ static const char *TAG = "app_main";
 // --- Timer Callback: Sets the GPIO pin LOW when the pulse duration is complete ---
 static void trigger_off_cb(void *arg)
 {
-    // 3. Set the pin LOW to deactivate the relay
-    gpio_set_level(GARAGE_DOOR_TRIGGER_PIN, 0);
+    // 3. Set the pin LOW using the system API
+    system_digital_write(GARAGE_DOOR_TRIGGER_PIN, 0);
     printf("%s: Trigger pulse finished (Software Timer complete).\n", TAG);
 }
 
 // --- Function to initialize the GPIO pin and the software timer ---
 static int app_driver_gpio_init()
 {
-    // Configure the GPIO pin as a push-pull output
-    gpio_reset_pin(GARAGE_DOOR_TRIGGER_PIN);
-    gpio_set_direction(GARAGE_DOOR_TRIGGER_PIN, GPIO_MODE_OUTPUT);
-
-    // Set the initial state to inactive (low)
-    gpio_set_level(GARAGE_DOOR_TRIGGER_PIN, 0);
+    // Set the initial state to inactive (low) using the system API.
+    // The 'system_digital_write' call typically handles the pin configuration implicitly.
+    system_digital_write(GARAGE_DOOR_TRIGGER_PIN, 0);
 
     // Initialize the one-shot software timer
     s_trigger_timer = sw_timer_create(TRIGGER_PULSE_MS, false, trigger_off_cb, NULL);
@@ -72,8 +64,8 @@ static void trigger_momentary_pulse()
 {
     printf("%s: Starting momentary trigger pulse.\n", TAG);
 
-    // 1. Set the pin HIGH to activate the relay
-    gpio_set_level(GARAGE_DOOR_TRIGGER_PIN, 1);
+    // 1. Set the pin HIGH using the system API
+    system_digital_write(GARAGE_DOOR_TRIGGER_PIN, 1);
 
     // 2. Start the timer to set the pin LOW after TRIGGER_PULSE_MS
     sw_timer_start(s_trigger_timer);
